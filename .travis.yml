@@ -6,7 +6,6 @@ env:
 services:
   - docker
 
-
 before_install:
   # Install newest Docker Compose and Docker Engine
   - sudo rm /usr/local/bin/docker-compose

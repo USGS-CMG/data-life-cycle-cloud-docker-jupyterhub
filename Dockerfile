@@ -20,7 +20,7 @@ RUN pip install -r /tmp/dockerspawner/requirements.txt
 RUN cd /tmp/dockerspawner && pip install .
 RUN rm -rf /tmp/dockerspawner
 
-COPY files/jupyterhub/files/entrypoint.sh /srv/jupyterhub/entrypoint.sh
+COPY files/jupyterhub/entrypoint.sh /srv/jupyterhub/entrypoint.sh
 RUN chmod +x /srv/jupyterhub/entrypoint.sh
 
 ENTRYPOINT ["/srv/jupyterhub/entrypoint.sh", "&&"]
