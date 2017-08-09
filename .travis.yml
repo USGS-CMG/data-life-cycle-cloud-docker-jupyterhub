@@ -19,7 +19,7 @@ before_install:
 
 script:
   # Build the container
-  - docker-compose -f docker-compose-travis.yml up jupyterhub
+  - docker-compose -f docker-compose-travis.yml up -d jupyterhub
   # Verify that it's running
   - test $(docker ps -q -f "status=running" | wc -l) -eq 1
   # Wait for Docker Jupyterhub to actually initialize. Should be a few seconds
