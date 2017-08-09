@@ -1,0 +1,85 @@
+---
+version: '3.3'
+
+secrets:
+  registry_auth:
+    file: ./registry/files/auth/htpasswd
+  registry_ssl_key:
+    file: ./registry/files/ssl/registry_ssl_key.pem
+  jupyterhub_ssl_key:
+    file: ./jupyterhub/files/ssl/jupyterhub_ssl_key.pem
+  jupyterhub_secret_cookie:
+    file: ./jupyterhub/files/jupyterhub_cookie_secret
+  jupyterhub_proxy_auth_token:
+    file: ./jupyterhub/files/jupyterhub_proxy_auth_token
+
+configs:
+  registry_ssl_certificate:
+    file: ./registry/files/ssl/registry_cert.crt
+  jupyterhub_ssl_certificate:
+    file: ./jupyterhub/files/ssl/jupyterhub_ssl_cert.crt
+  jupyterhub_configuration:
+    file: ./jupyterhub/files/jupyterhub_config.py
+  jupyterhub_entrypoint:
+    file: ./jupyterhub/files/entrypoint.sh
+  jupyterhub_userlist:
+    file: ./jupyterhub/files/user_list.txt
+
+networks:
+  dlcc_network:
+
+volumes:
+  jupyterhub_volume:
+    labels:
+      - "docker.volume.description=JupyterHub Docker Volume"
+      - "docker.volume.name=volume.jupyterhub"
+  registry_volume:
+    labels:
+      - "docker.volume.description=Registry Docker Volume"
+      - "docker.volume.name=volume.registry"
+
+services:
+  registry:
+    image: registry:2.6.2
+    networks:
+      dlcc_network:
+        aliases:
+          - container.docker.registry
+    ports:
+      - "5000:5000"
+    volumes:
+      - registry_volume:/var/lib/registry
+    environment:
+      - GUNICORN_OPTS=["--preload"]
+
+  jupyterhub:
+    build:
+      context: .
+    image: localhost:5000/dlcc/jupyterhub:LATEST
+    networks:
+        dlcc_network:
+          aliases:
+            - container.docker.jupyterhub
+    ports:
+      - "443:443"
+    volumes:
+      - "jupyterhub_volume:/srv/jupyterhub"
+    secrets:
+      - source: jupyterhub_ssl_key
+        target: /srv/jupyterhub/ssl/jupyterhub_ssl_key.pem
+      - source: jupyterhub_secret_cookie
+        target: /srv/jupyterhub/jupyterhub_cookie_secret
+        mode: 0600
+      - source: jupyterhub_proxy_auth_token
+        target: /srv/jupyterhub/jupyterhub_proxy_auth_token
+        mode: 0600
+    configs:
+      - source: jupyterhub_ssl_certificate
+        target: /srv/jupyterhub/ssl/jupyterhub_ssl_cert.crt
+      - source: jupyterhub_configuration
+        target: /srv/jupyterhub/jupyterhub_config.py
+      - source: jupyterhub_userlist
+        target: /srv/jupyterhub/user_list.txt
+      - source: jupyterhub_entrypoint
+        target: /srv/jupyterhub/entrypoint.sh
+        mode: 0774

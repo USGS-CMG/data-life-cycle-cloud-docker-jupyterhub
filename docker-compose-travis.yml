@@ -1,0 +1,23 @@
+---
+version: '3.3'
+
+
+networks:
+  dlcc_network:
+
+services:
+  jupyterhub:
+    build:
+      context: .
+    image: dlcc/jupyterhub:LATEST
+    networks:
+        dlcc_network:
+          aliases:
+            - container.docker.jupyterhub
+    ports:
+      - "443:443"
+    volumes:
+      - "${PWD}/files/jupyterhub/user_list.txt:/srv/jupyterhub/user_list.txt:ro"
+      - "${PWD}/files/jupyterhub/jupyterhub_config.py:/srv/jupyterhub/jupyterhub_config.py"
+      - "${PWD}/files/jupyterhub/ssl/:/srv/jupyterhub/ssl/"
+      - "${PWD}/files/jupyterhub/jupyterhub_proxy_auth_token:/srv/jupyterhub/jupyterhub_proxy_auth_token"
