@@ -25,7 +25,7 @@ script:
   # Wait for Docker Jupyterhub to actually initialize. Should be a few seconds
   - sleep 15
   # Verify that a curl requests gets a proper version response
-  - test "$(curl 'https://localhost/hub/api' -k)" == "{\\\"version\\\": \\\"0.7.2\\\"}"
+  - test "$(curl 'https://localhost/hub/api' -k)" == '{"version": "0.7.2"}'
 
 after_script:
   - docker-compose down jupyterhub
