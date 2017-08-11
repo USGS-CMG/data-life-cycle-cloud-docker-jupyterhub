@@ -8,7 +8,7 @@ networks:
 services:
   jupyterhub:
     build:
-      context: .
+      context: ./files/jupyterhub
     image: dlcc/jupyterhub:LATEST
     networks:
         dlcc_network:
