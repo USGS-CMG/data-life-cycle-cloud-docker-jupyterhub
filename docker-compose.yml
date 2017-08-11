@@ -54,8 +54,8 @@ services:
 
   jupyterhub:
     build:
-      context: .
-    image: localhost:5000/dlcc/jupyterhub:LATEST
+      context: ./files/jupyterhub
+    image: localhost:5000/dlcc/jupyterhub:latest
     networks:
         dlcc_network:
           aliases:
