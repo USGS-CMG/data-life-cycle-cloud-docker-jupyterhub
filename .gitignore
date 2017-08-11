@@ -1,1 +1,3 @@
 .DS_store
+files/jupyterhub/compose_local.env
+files/jupyterhub/jupyterhub_oauth_github_secret_local
