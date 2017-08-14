@@ -19,9 +19,9 @@ RUN wget https://get.docker.com -q -O /tmp/getdocker && \
     sh /tmp/getdocker
 
 # Install the Docker Swarm spawner
+ENV VERSION_SWARM_SPAWNER="v0.10.0"
 RUN git clone https://github.com/cassinyio/SwarmSpawner /tmp/SwarmSpawner
-RUN pip install -r /tmp/SwarmSpawner/requirements.txt
-RUN cd /tmp/SwarmSpawner && pip install .
+RUN cd /tmp/SwarmSpawner && git checkout $VERSION_SWARM_SPAWNER && python setup.py install
 RUN rm -rf /tmp/SwarmSpawner
 
 COPY entrypoint.sh /srv/jupyterhub/entrypoint.sh
