@@ -38,7 +38,7 @@ cluster along with a Docker private registry service running in that cluster. In
 (Skip to the [tl;dr](https://github.com/USGS-CMG/data-life-cycle-cloud/blob/f75f79f94e16497536e919ff07eaaddd78a1353d/docker/README.md#swarm-create-tldr))
 to get up and running in a few minutes.
 
-## Building the JupyterHub and Jupyter Notebook Docker containers
+## Building the JupyterHub and Jupyter Notebook Docker containers ([tl;dr](#building-jupyter-tldr))
 
 To test locally, you will need to build the JupyterHub and Jupyter Notebook Docker
 containers and deploy them to your locally running private registry. Doing so allows
@@ -129,7 +129,7 @@ Removing intermediate container 3bf48fb9f3dc
 Successfully built 092aa5b3f82e
 Successfully tagged localhost:5000/dlcc/jupyter-singleuser:latest
 
-docker push  localhost:5000/dlcc/jupyter-singleuser:latest
+$ docker push  localhost:5000/dlcc/jupyter-singleuser:latest
 The push refers to a repository [localhost:5000/dlcc/jupyter-singleuser]
 1308a6f868a5: Pushed
 df9237f6a830: Pushed
@@ -153,3 +153,218 @@ $ docker-machine ssh manager curl -s 'http://localhost:5000/v2/dlcc/jupyterhub/t
 $ docker-machine ssh manager curl -s 'http://localhost:5000/v2/dlcc/jupyter-singleuser/tags/list'
 {"name":"dlcc/jupyter-singleuser","tags":["latest"]}
 ```
+
+### <a name="building-jupyter-tldr"></a>Building Jupyter Docker images tl;dr
+
+This tl;dr assumes your current working directory is the root of this project and
+you're running the Docker private registry in your [Docker Swarm](https://github.com/USGS-CMG/data-life-cycle-cloud/blob/f75f79f94e16497536e919ff07eaaddd78a1353d/docker/README.md#creating-a-local-swarm-cluster-tldr)
+on Docker Machine.
+
+```
+docker build -t localhost:5000/dlcc/jupyterhub:latest ./files/jupyterhub/
+docker push localhost:5000/dlcc/jupyterhub:latest
+docker build -t localhost:5000/dlcc/jupyter-singleuser:latest ./files/jupyter-docker-stacks/single-user/
+docker push  localhost:5000/dlcc/jupyter-singleuser:latest
+```
+
+## Running JupyterHub
+
+Now that you have the Docker images in your local registry, you are ready to deploy
+them to your locally running Swarm cluster.
+
+### Configuration
+
+JupyterHub's primary configuration file is located in this project under `files/jupyterhub/jupyterhub_config.py`.
+This file is copied into the JupyterHub Docker container when it is deployed into
+a stack. If you want, you should feel free to change this file. More Information
+about this file [may be found in the JupyterHub documentation](http://jupyterhub.readthedocs.io/en/latest/getting-started/config-basics.html).  
+
+When launching the JupyterHub Swarm stack via the Docker Compose configuration
+using `docker stack deploy`, there is an environment file that is used to provide
+further configuration to the running JupyterHub service.  The file used by default
+is `files/jupyterhub/compose.env`.
+
+This file sets environment variables into a running container that JupyterHub uses
+during initialization.  You can either edit this file directly or you can duplicate
+this file to a file named (for example) `compose_local.env`. You can then use this
+new file to set your own configuration. In order for Docker to pick up your new file,
+before launching a stack you must set an environment variable named `DOCKER_JUPYTERHUB_LOCAL_ENV`
+to `_local`. In doing so, Docker will read from the file `compose_local.env` instead.
+
+This isn't mandatory but in doing so, you will not incur conflicts when pulling down
+the latest changes for this project from version control.
+
+### SSL Configuration
+
+When running JupyterHub in production, you may (should) want to use SSL. There
+are self-signed SSL certificates included with this project as an example of how
+they are used on a running server. The SSL certificates are placed into
+`files/jupyterhub/ssl/`. They are named jupyterhub_ssl_cert.crt and jupyterhub_ssl_key.pem.
+
+When the JupyterHub server starts, those files are copied into the running container
+to the locations `/srv/jupyterhub/ssl/jupyterhub_ssl_key.pem` and `/srv/jupyterhub/ssl/jupyterhub_ssl_cert.crt`.
+They are picked up by the `jupyterhub_config.py` file and used for encryption.
+
+### Secret Cookie File
+
+JupyterHub uses a [cookie secret](http://jupyterhub.readthedocs.io/en/latest/getting-started/security-basics.html?highlight=cookie#cookie-secret)
+that is used to encrypt browser cookies used for authentication. A default file
+is included with this project at `files/jupyterhub/jupyterhub_cookie_secret`. In
+production, you should set this to your own value. To do so, you may edit this file
+directly or create a  `files/jupyterhub/jupyterhub_cookie_secret_local` file and
+enter your own value there. Make sure to set your environment variable `DOCKER_JUPYTERHUB_LOCAL_ENV`
+to `_local` if doing so.
+
+### Auth Token Configuration
+
+JupyterHub and the notebook proxies use a [proxy auth token](http://jupyterhub.readthedocs.io/en/latest/getting-started/security-basics.html?highlight=cookie#authentication-token)
+to communicate. A default file is included with this project at
+`files/jupyterhub/jupyterhub_proxy_auth_token`. In production, you should set
+this to your own value. To do so, you may edit this file directly or create a  
+`files/jupyterhub/jupyterhub_proxy_auth_token` file and enter your own value there.
+Make sure to set your environment variable `DOCKER_JUPYTERHUB_LOCAL_ENV` to `_local`
+if doing so.
+
+####  Logging in
+
+##### Local users
+
+JupyterHub has a [number of different authenticators](https://github.com/jupyterhub/jupyterhub#authenticators)
+that can be used as a login mechanism. By default, JupyterHub uses the PAMAuthenticator
+module. There is a user initially created for this module named "testuser".
+The password is "testpassword". You can add more users by editing
+`files/jupyterhub/user_list.txt` and re-deploying the JupyterHub stack. Each line
+in that file defines a user and password, separated by a colon. When JupyterHub starts,
+the startup script will create those users within the JupyterHub container. The PAMAuthenticator
+module authenticates against the running Docker container.
+
+The `user_list.txt` file is mounted into the running Docker container as a
+[Docker Swarm secret](https://docs.docker.com/engine/swarm/secrets/). The file shows
+up in the container `/srv/jupyterhub/user_list.txt` and is configured in the
+Docker Compose configuration file. If you wish to not have users created by default,
+either remove the secret configuration in the Docker Compose file or remove all
+content from `files/jupyterhub/user_list.txt` and re-start the JupyterHub stack.
+
+### *THIS IS FOR DEVELOPMENT ONLY*
+
+##### GitHub users
+
+You can also use GitHub as an OAuth endpoint. In doing so, JupyterHub will redirect
+your login to GitHub so you can authenticate there. GitHub will then redirect your
+browser back to JupyterHub. JupyterHub, once verifying that you've logged into GitHub
+will create a user for you and log you in as your GitHub username.
+
+To get the GitHub OAuth working, edit your environment file (compose.env or your
+  local version) and add the following row with the following content:
+
+`AUTHENTICATOR_TYPE=github`
+
+Now you should go to GitHub and [register your local application](https://developer.github.com/apps/building-integrations/setting-up-and-registering-oauth-apps/registering-oauth-apps/).
+
+An example registration would look like:
+- Application Name: Dockerized JupyterHub Test
+- Homepage URL: https://192.168.99.101/hub
+- Application Description: Dockerized JupyterHub Test Description
+- Authorization callback URL: https://192.168.99.101/hub/oauth_callback
+
+You can use the IP of any node in your swarm. Using Docker Machine, you can get the
+IP by issuing `docker-machine ip <node name>`.
+
+Once your application is registered, GitHub provides for you a client ID and a
+client secret. Add the client ID your environment file. Your client ID key should be
+titled `OAUTH_CLIENT_ID`. You should then add your client secret should be written
+to a file. By default, the file is `files/jupyterhub/jupyterhub_oauth_github_secret`.
+If, instead you'd like to use your own file, you can create one named
+`files/jupyterhub/jupyterhub_oauth_github_secret_local`. This requires having the
+environment variable `DOCKER_JUPYTERHUB_LOCAL_ENV` set to the value `_local` as
+mentioned above in the configuration section. Otherwise, you can write your file
+anywhere you like and change the `secrets.jupyterhub_oauth_secret` location in
+your Docker Compose configuration file. When JupyterHub starts, it will read that
+secret file and initialize JupyterHub with it.
+
+You can also add yourself or whoever you like as administrative users in JupyterHub
+by adding a list of users to the `AUTHENTICATOR_ADMIN_USERS` value in your environment
+file. The list should be comma separated.
+
+Finally, add a line to your environment file named `OAUTH_CALLBACK_URL`. This should
+match the value you put into GitHub for the authorization callback URL. In this example
+that would be `https://192.168.99.101/hub/oauth_callback`
+
+An example environment file with non-real values should look like:
+
+```
+OAUTH_CALLBACK_URL=https://192.168.99.101/hub/oauth_callback
+OAUTH_CLIENT_ID=dd1234567890ec
+OAUTH_CLIENT_SECRET_FILE_PATH=/srv/jupyterhub/jupyterhub_oauth_github_secret
+AUTHENTICATOR_ADMIN_USERS=isuftin
+AUTHENTICATOR_TYPE=github
+```
+
+### Notebook Image
+
+When a user logs into JupyterHub, JupyterHub will create a new Docker Swarm service
+for that user. The service is a Docker container running a single-user Docker notebook.
+This allows for the user's notebook process to be completely encapsulated within
+ its own container. The image that is launched by default is the one that was created
+ in the configuration above. If you want to use a different image, you can use
+ any of the images [described here](https://github.com/jupyter/docker-stacks).
+
+To change the default image used by JupyterHub, edit your environment file and update
+the value for the environment `SINGLE_USER_IMAGE`. By default, the value is
+`localhost:5000/dlcc/jupyter-singleuser:latest` referring to the image you built
+and pushed to the local private Docker registry.
+
+If you do change the default image, you may need to change what command runs at
+startup. To do so, edit `jupyterhub_config.py` and update the array for the key
+`c.SwarmSpawner.container_spec.args`.
+
+## Launching JupyterHub
+
+Once you have everything configured, you can launch JupyterHub by changing your working
+directory to the root of this project and issuing the command `docker stack deploy jupyterhub -c docker-compose-local-registry.yml`
+
+JupyterHub will deploy to the manager node. This is required because the Docker client
+in the JupyterHub container needs to communicate with the Docker Swarm manager engine
+on the host the container runs on. This is how JupyterHub is able to manage Docker
+Swarm services.  The Docker Compose configuration ensures that the JupyterHub container
+runs on a manager node by setting the `deploy.labels.placement.constraints` value
+to `role == manager`. By default, manager nodes have this label set.
+
+Once launched, you can view the logs for JupyterHub by issuing the `docker service logs`
+command.
+
+```
+$ docker service logs jupyterhub_jupyterhub
+jupyterhub_jupyterhub.1.bt2f161hittp@manager    | Adding user testuser
+jupyterhub_jupyterhub.1.bt2f161hittp@manager    | [I 2017-08-14 14:30:43.619 JupyterHub app:724] Loading cookie_secret from /srv/jupyterhub/jupyterhub_cookie_secret
+jupyterhub_jupyterhub.1.bt2f161hittp@manager    | [I 2017-08-14 14:30:43.732 JupyterHub app:892] Not using whitelist. Any authenticated user will be allowed.
+jupyterhub_jupyterhub.1.bt2f161hittp@manager    | [I 2017-08-14 14:30:43.824 JupyterHub swarmspawner:229] Docker service 'jupyter-5d9c68c6c50ed3d02a2fcf54f63993b6-1' is gone
+jupyterhub_jupyterhub.1.bt2f161hittp@manager    | [W 2017-08-14 14:30:43.824 JupyterHub swarmspawner:194] Docker service not found
+jupyterhub_jupyterhub.1.bt2f161hittp@manager    | [I 2017-08-14 14:30:43.833 JupyterHub app:1453] Hub API listening on http://0.0.0.0:8081/hub/
+jupyterhub_jupyterhub.1.bt2f161hittp@manager    | [I 2017-08-14 14:30:43.837 JupyterHub app:1176] Starting proxy @ http://0.0.0.0:443/
+jupyterhub_jupyterhub.1.bt2f161hittp@manager    | 14:30:44.056 - info: [ConfigProxy] Proxying https://0.0.0.0:443 to http://127.0.0.1:8081
+jupyterhub_jupyterhub.1.bt2f161hittp@manager    | 14:30:44.060 - info: [ConfigProxy] Proxy API at http://127.0.0.1:444/api/routes
+jupyterhub_jupyterhub.1.bt2f161hittp@manager    | [I 2017-08-14 14:30:44.147 JupyterHub app:1485] JupyterHub is now running at http://127.0.0.1:443/
+```
+
+If you wish to tail the logs, you can add the `-f` flag to the logs command. Hit
+ctrl-c to stop tailing.
+
+At this point you should be able to view the JupyterHub UI by accessing the JupyterHub
+console using your browser. Navigate to the IP of any VM in your Docker Swarm. You can
+find the IP by issuing `docker-machine ip <node name>`. It doesn't matter if JupyterHub
+is not running on the node you access. The Docker Swarm mesh network will route your
+call to the service.
+
+If you've not changed the default authentication scheme, you should be able to log
+in using `testuser` for a usernamr and `testpassword` for a password. If you've updated
+the configuration to use GitHub as an OAuth provider, use your GitHub credentials to
+do so.
+
+You can remove your JupyterHub stack by issuing `docker stack rm jupyterhub`.
+
+If you've logged in to JupyterHub, you may leave an orphan service running. Try
+issuing `docker service ls`. If you see a service named `jupyter-<a long hash>-1`,
+that service is your JupyterHub notebook and needs to be cleaned up before removing
+the stack. You can issue `docker service rm <name of the service>`. After that, you
+should try to remove the JupyterHub stack again.

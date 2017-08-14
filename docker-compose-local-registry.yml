@@ -5,11 +5,13 @@ secrets:
   jupyterhub_ssl_key:
     file: ./files/jupyterhub/ssl/jupyterhub_ssl_key.pem
   jupyterhub_secret_cookie:
-    file: ./files/jupyterhub/jupyterhub_cookie_secret
+    file: ./files/jupyterhub/jupyterhub_cookie_secret${DOCKER_JUPYTERHUB_LOCAL_ENV}
   jupyterhub_proxy_auth_token:
-    file: ./files/jupyterhub/jupyterhub_proxy_auth_token
+    file: ./files/jupyterhub/jupyterhub_proxy_auth_token${DOCKER_JUPYTERHUB_LOCAL_ENV}
   jupyterhub_oauth_secret:
     file: ./files/jupyterhub/jupyterhub_oauth_github_secret${DOCKER_JUPYTERHUB_LOCAL_ENV}
+  jupyterhub_userlist:
+    file: ./files/jupyterhub/user_list.txt
 
 configs:
   jupyterhub_ssl_certificate:
@@ -18,8 +20,6 @@ configs:
     file: ./files/jupyterhub/jupyterhub_config.py
   jupyterhub_entrypoint:
     file: ./files/jupyterhub/entrypoint.sh
-  jupyterhub_userlist:
-    file: ./files/jupyterhub/user_list.txt
 
 networks:
   dlcc_network:
@@ -71,13 +71,13 @@ services:
       - source: jupyterhub_oauth_secret
         target: /srv/jupyterhub/jupyterhub_oauth_secret
         mode: 0600
+      - source: jupyterhub_userlist
+        target: /srv/jupyterhub/user_list.txt
     configs:
       - source: jupyterhub_ssl_certificate
         target: /srv/jupyterhub/ssl/jupyterhub_ssl_cert.crt
       - source: jupyterhub_configuration
         target: /srv/jupyterhub/jupyterhub_config.py
-      - source: jupyterhub_userlist
-        target: /srv/jupyterhub/user_list.txt
       - source: jupyterhub_entrypoint
         target: /srv/jupyterhub/entrypoint.sh
         mode: 0774

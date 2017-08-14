@@ -8,8 +8,8 @@ runtime_dir = os.path.join('/srv/jupyterhub')
 ssl_dir = pjoin(runtime_dir, 'ssl')
 
 # SSL Configuration
-c.JupyterHub.ssl_key = os.getenv('SSL_KEY', pjoin(ssl_dir, 'jupyterhub_ssl_key.pem'))
-c.JupyterHub.ssl_cert = os.getenv('SSL_CERT', pjoin(ssl_dir, 'jupyterhub_ssl_cert.crt'))
+c.JupyterHub.ssl_key = os.getenv('SSL_KEY', pjoin(ssl_dir, os.getenv('SSL_FILE_KEY', 'jupyterhub_ssl_key.pem')))
+c.JupyterHub.ssl_cert = os.getenv('SSL_CERT', pjoin(ssl_dir, os.getenv('SSL_FILE_CERT', 'jupyterhub_ssl_cert.crt')))
 c.JupyterHub.port = int(os.getenv('SSL_PORT', 443))
 
 # Secret Cookie Configuration
@@ -29,13 +29,13 @@ c.JupyterHub.extra_log_file =  os.getenv('EXTRA_LOG_FILE', '/var/log/jupyterhub.
 c.JupyterHub.ip = os.getenv('JUPYTERHUB_IP', '0.0.0.0')
 c.JupyterHub.hub_ip = os.getenv('JUPYTERHUB_HUB_IP', '0.0.0.0')
 c.JupyterHub.hub_port = int(os.getenv('JUPYTERHUB_HUB_PORT', 8081))
-c.JupyterHub.admin_access = True
 
 # Authenticator configuration
+c.JupyterHub.admin_access = True
+c.Authenticator.admin_users = set(os.getenv('AUTHENTICATOR_ADMIN_USERS', '').split(","))
 if os.getenv('AUTHENTICATOR_TYPE') == 'github':
     from oauthenticator.github import GitHubOAuthenticator
     c.JupyterHub.authenticator_class = GitHubOAuthenticator
-    c.Authenticator.admin_users = set(os.getenv('AUTHENTICATOR_ADMIN_USERS', '').split(","))
 
     c.GitHubOAuthenticator.oauth_callback_url = os.getenv('OAUTH_CALLBACK_URL', 'https://localhost/hub/oauth_callback')
     c.GitHubOAuthenticator.client_id = os.getenv('OAUTH_CLIENT_ID', '')
@@ -64,5 +64,5 @@ c.SwarmSpawner.container_spec = {
 }
 c.SwarmSpawner.use_user_options = True
 user_options = {
-    'placement' : ["node.role == worker"]
+    'placement' : ["node.Role == worker"]
 }
