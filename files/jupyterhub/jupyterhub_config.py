@@ -46,23 +46,24 @@ if os.getenv('AUTHENTICATOR_TYPE') == 'github':
             c.GitHubOAuthenticator.client_secret = secret_file.read().rstrip('\n')
 
 # Spawner Configuration
-c.JupyterHub.spawner_class = 'cassinyspawner.SwarmSpawner'
-c.SwarmSpawner.jupyterhub_service_name = os.getenv('SWARMSPAWNER_JUPYTERHUB_SERVICE_NAME', 'jupyterhub_jupyterhub')
-c.SwarmSpawner.networks = [os.getenv('SWARMSPAWNER_JUPYTERHUB_NETWORKS', 'jupyterhub_dlcc_network')]
-c.SwarmSpawner.start_timeout = 60 * 5
-notebook_dir = os.getenv('NOTEBOOK_DIR', '/home/jovyan/work')
-c.SwarmSpawner.notebook_dir = notebook_dir
-mounts = [{
-    'type': 'volume',
-    'source': 'jupyterhub-user-{username}',
-    'target': notebook_dir
-}]
-c.SwarmSpawner.container_spec = {
-    'args': ['/usr/local/bin/start-singleuser.sh'],
-    'Image': os.getenv('SINGLE_USER_IMAGE', 'jupyterhub/singleuser:latest'),
-    'mounts': mounts
-}
-c.SwarmSpawner.use_user_options = True
-user_options = {
-    'placement' : ["node.Role == worker"]
-}
+if os.getenv('JUPYTERHUB_SPAWNER', '') == 'swarmspawner':
+    c.JupyterHub.spawner_class = 'cassinyspawner.SwarmSpawner'
+    c.SwarmSpawner.jupyterhub_service_name = os.getenv('SWARMSPAWNER_JUPYTERHUB_SERVICE_NAME', 'jupyterhub_jupyterhub')
+    c.SwarmSpawner.networks = [os.getenv('SWARMSPAWNER_JUPYTERHUB_NETWORKS', 'jupyterhub_dlcc_network')]
+    c.SwarmSpawner.start_timeout = 60 * 5
+    notebook_dir = os.getenv('NOTEBOOK_DIR', '/home/jovyan/work')
+    c.SwarmSpawner.notebook_dir = notebook_dir
+    mounts = [{
+        'type': 'volume',
+        'source': 'jupyterhub-user-{username}',
+        'target': notebook_dir
+    }]
+    c.SwarmSpawner.container_spec = {
+        'args': ['/usr/local/bin/start-singleuser.sh'],
+        'Image': os.getenv('SINGLE_USER_IMAGE', 'jupyterhub/singleuser:latest'),
+        'mounts': mounts
+    }
+    c.SwarmSpawner.use_user_options = True
+    user_options = {
+        'placement' : ["node.Role == worker"]
+    }
