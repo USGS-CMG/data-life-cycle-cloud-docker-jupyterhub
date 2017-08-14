@@ -1,14 +1,13 @@
 ---
 version: '3.3'
 
-
 networks:
   dlcc_network:
 
 services:
   jupyterhub:
     build:
-      context: .
+      context: ./files/jupyterhub
     image: dlcc/jupyterhub:LATEST
     networks:
         dlcc_network:

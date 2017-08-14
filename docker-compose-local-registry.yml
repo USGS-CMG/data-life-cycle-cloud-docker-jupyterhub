@@ -2,28 +2,24 @@
 version: '3.3'
 
 secrets:
-  registry_auth:
-    file: ./registry/files/auth/htpasswd
-  registry_ssl_key:
-    file: ./registry/files/ssl/registry_ssl_key.pem
   jupyterhub_ssl_key:
-    file: ./jupyterhub/files/ssl/jupyterhub_ssl_key.pem
+    file: ./files/jupyterhub/ssl/jupyterhub_ssl_key.pem
   jupyterhub_secret_cookie:
-    file: ./jupyterhub/files/jupyterhub_cookie_secret
+    file: ./files/jupyterhub/jupyterhub_cookie_secret${DOCKER_JUPYTERHUB_LOCAL_ENV}
   jupyterhub_proxy_auth_token:
-    file: ./jupyterhub/files/jupyterhub_proxy_auth_token
+    file: ./files/jupyterhub/jupyterhub_proxy_auth_token${DOCKER_JUPYTERHUB_LOCAL_ENV}
+  jupyterhub_oauth_secret:
+    file: ./files/jupyterhub/jupyterhub_oauth_github_secret${DOCKER_JUPYTERHUB_LOCAL_ENV}
+  jupyterhub_userlist:
+    file: ./files/jupyterhub/user_list.txt
 
 configs:
-  registry_ssl_certificate:
-    file: ./registry/files/ssl/registry_cert.crt
   jupyterhub_ssl_certificate:
-    file: ./jupyterhub/files/ssl/jupyterhub_ssl_cert.crt
+    file: ./files/jupyterhub/ssl/jupyterhub_ssl_cert.crt
   jupyterhub_configuration:
-    file: ./jupyterhub/files/jupyterhub_config.py
+    file: ./files/jupyterhub/jupyterhub_config.py
   jupyterhub_entrypoint:
-    file: ./jupyterhub/files/entrypoint.sh
-  jupyterhub_userlist:
-    file: ./jupyterhub/files/user_list.txt
+    file: ./files/jupyterhub/entrypoint.sh
 
 networks:
   dlcc_network:
@@ -33,25 +29,12 @@ volumes:
     labels:
       - "docker.volume.description=JupyterHub Docker Volume"
       - "docker.volume.name=volume.jupyterhub"
-  registry_volume:
+  jupyterhub_user_volume:
     labels:
-      - "docker.volume.description=Registry Docker Volume"
-      - "docker.volume.name=volume.registry"
+      - "docker.volume.description=JupyterHub User Docker Volume"
+      - "docker.volume.name=volume.jupyterhub-user"
 
 services:
-  registry:
-    image: registry:2.6.2
-    networks:
-      dlcc_network:
-        aliases:
-          - container.docker.registry
-    ports:
-      - "5000:5000"
-    volumes:
-      - registry_volume:/var/lib/registry
-    environment:
-      - GUNICORN_OPTS=["--preload"]
-
   jupyterhub:
     build:
       context: ./files/jupyterhub
@@ -64,6 +47,18 @@ services:
       - "443:443"
     volumes:
       - "jupyterhub_volume:/srv/jupyterhub"
+      - "${DOCKER_CERT_PATH}:/certs:ro"
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    env_file:
+      - "./files/jupyterhub/compose${DOCKER_JUPYTERHUB_LOCAL_ENV}.env"
+    deploy:
+      labels:
+        swarm.service.label.service.name: "jupyterhub"
+      placement:
+        constraints:
+          - node.role == manager
     secrets:
       - source: jupyterhub_ssl_key
         target: /srv/jupyterhub/ssl/jupyterhub_ssl_key.pem
@@ -73,13 +68,16 @@ services:
       - source: jupyterhub_proxy_auth_token
         target: /srv/jupyterhub/jupyterhub_proxy_auth_token
         mode: 0600
+      - source: jupyterhub_oauth_secret
+        target: /srv/jupyterhub/jupyterhub_oauth_secret
+        mode: 0600
+      - source: jupyterhub_userlist
+        target: /srv/jupyterhub/user_list.txt
     configs:
       - source: jupyterhub_ssl_certificate
         target: /srv/jupyterhub/ssl/jupyterhub_ssl_cert.crt
       - source: jupyterhub_configuration
         target: /srv/jupyterhub/jupyterhub_config.py
-      - source: jupyterhub_userlist
-        target: /srv/jupyterhub/user_list.txt
       - source: jupyterhub_entrypoint
         target: /srv/jupyterhub/entrypoint.sh
         mode: 0774
