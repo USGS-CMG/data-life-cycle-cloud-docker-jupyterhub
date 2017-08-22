@@ -10,16 +10,16 @@ RUN wget -O environment.yml https://raw.githubusercontent.com/ioos/notebooks_dem
 
 RUN conda config --add channels conda-forge --force
 
-RUN conda update --yes --all
+RUN conda update --yes --all && conda clean -a
 
-RUN conda install anaconda-navigator
+RUN conda install anaconda-navigator && conda clean -a
 
-RUN conda env create --force --file environment.yml
+RUN conda env create --force --file environment.yml && conda clean -a
 
 # https://github.com/Anaconda-Platform/nb_conda_kernels
-RUN conda install -c conda-forge nb_conda_kernels
+RUN conda install -c conda-forge nb_conda_kernels && conda clean -a
 
-RUN conda create --force -n ipykernel_py3 python=3 ipykernel
+RUN conda create --force -n ipykernel_py3 python=3 ipykernel && conda clean -a
 
 USER $NB_USER
 
