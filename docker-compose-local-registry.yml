@@ -29,10 +29,6 @@ volumes:
     labels:
       - "docker.volume.description=JupyterHub Docker Volume"
       - "docker.volume.name=volume.jupyterhub"
-  jupyterhub_user_volume:
-    labels:
-      - "docker.volume.description=JupyterHub User Docker Volume"
-      - "docker.volume.name=volume.jupyterhub-user"
 
 services:
   jupyterhub:
@@ -47,7 +43,6 @@ services:
       - "443:443"
     volumes:
       - "jupyterhub_volume:/srv/jupyterhub"
-      - "${DOCKER_CERT_PATH}:/certs:ro"
       - type: bind
         source: /var/run/docker.sock
         target: /var/run/docker.sock
@@ -69,7 +64,7 @@ services:
         target: /srv/jupyterhub/jupyterhub_proxy_auth_token
         mode: 0600
       - source: jupyterhub_oauth_secret
-        target: /srv/jupyterhub/jupyterhub_oauth_secret
+        target: /srv/jupyterhub/jupyterhub_oauth_github_secret
         mode: 0600
       - source: jupyterhub_userlist
         target: /srv/jupyterhub/user_list.txt
