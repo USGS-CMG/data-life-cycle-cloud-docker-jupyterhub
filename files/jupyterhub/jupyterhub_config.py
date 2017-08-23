@@ -46,12 +46,18 @@ if os.getenv('AUTHENTICATOR_TYPE') == 'github':
             c.GitHubOAuthenticator.client_secret = secret_file.read().rstrip('\n')
 
 # Spawner Configuration
+c.JupyterHub.cleanup_servers = True
+c.SwarmSpawner.start_timeout = 300
+c.SwarmSpawner.http_timeout = 300
+c.JupyterHub.proxy_check_interval = 30
+
 if os.getenv('JUPYTERHUB_SPAWNER', '') == 'swarmspawner':
     c.JupyterHub.spawner_class = 'cassinyspawner.SwarmSpawner'
     c.SwarmSpawner.jupyterhub_service_name = os.getenv('SWARMSPAWNER_JUPYTERHUB_SERVICE_NAME', 'jupyterhub_jupyterhub')
     c.SwarmSpawner.networks = [os.getenv('SWARMSPAWNER_JUPYTERHUB_NETWORKS', 'jupyterhub_dlcc_network')]
-    c.SwarmSpawner.start_timeout = 60 * 5
-    # c.Spawner.http_timeout = 60 * 5
+    c.Spawner.start_timeout = 900
+    c.Spawner.http_timeout = 900
+    c.SwarmSpawner.placement = ["node.role == worker"]
     notebook_dir = os.getenv('NOTEBOOK_DIR', '/home/jovyan/work')
     c.SwarmSpawner.notebook_dir = notebook_dir
     mounts = [{
