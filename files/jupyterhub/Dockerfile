@@ -1,4 +1,4 @@
-FROM jupyterhub/jupyterhub:0.7.2
+FROM jupyterhub/jupyterhub:0.8.0
 
 MAINTAINER Ivan Suftin <isuftin@usgs.gov>
 
