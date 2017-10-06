@@ -12,6 +12,11 @@ c.JupyterHub.ssl_key = os.getenv('SSL_KEY', pjoin(ssl_dir, os.getenv('SSL_FILE_K
 c.JupyterHub.ssl_cert = os.getenv('SSL_CERT', pjoin(ssl_dir, os.getenv('SSL_FILE_CERT', 'jupyterhub_ssl_cert.crt')))
 c.JupyterHub.port = int(os.getenv('SSL_PORT', 443))
 
+c.JupyterHub.cleanup_servers = True
+c.JupyterHub.cleanup_proxy = True
+c.JupyterHub.proxy_check_interval = 30
+c.JupyterHub.trust_user_provided_tokens = True
+
 # Secret Cookie Configuration
 c.JupyterHub.cookie_secret_file = os.getenv('COOKIE_FILE', pjoin(runtime_dir, 'jupyterhub_cookie_secret'))
 
@@ -46,17 +51,14 @@ if os.getenv('AUTHENTICATOR_TYPE') == 'github':
             c.GitHubOAuthenticator.client_secret = secret_file.read().rstrip('\n')
 
 # Spawner Configuration
-c.JupyterHub.cleanup_servers = True
-c.SwarmSpawner.start_timeout = 300
-c.SwarmSpawner.http_timeout = 300
-c.JupyterHub.proxy_check_interval = 30
+c.Spawner.start_timeout = 900
+c.Spawner.http_timeout = 900
 
 if os.getenv('JUPYTERHUB_SPAWNER', '') == 'swarmspawner':
     c.JupyterHub.spawner_class = 'cassinyspawner.SwarmSpawner'
     c.SwarmSpawner.jupyterhub_service_name = os.getenv('SWARMSPAWNER_JUPYTERHUB_SERVICE_NAME', 'jupyterhub_jupyterhub')
     c.SwarmSpawner.networks = [os.getenv('SWARMSPAWNER_JUPYTERHUB_NETWORKS', 'jupyterhub_dlcc_network')]
-    c.Spawner.start_timeout = 900
-    c.Spawner.http_timeout = 900
+
     c.SwarmSpawner.placement = ["node.role == worker"]
     notebook_dir = os.getenv('NOTEBOOK_DIR', '/home/jovyan/work')
     c.SwarmSpawner.notebook_dir = notebook_dir
