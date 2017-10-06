@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 - Added IOOS Python environment
 - Added CHANGELOG.md
+- Updated to JupyterHub 0.8.0 base Docker image
 
 ## [0.0.1] - 2017-08-15
 ### Added
