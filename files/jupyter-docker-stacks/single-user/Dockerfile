@@ -1,4 +1,4 @@
-FROM jupyter/scipy-notebook
+FROM jupyter/scipy-notebook:281505737f8a
 
 MAINTAINER Ivan Suftin <isuftin@usgs.gov>
 
