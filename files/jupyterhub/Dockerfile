@@ -18,7 +18,8 @@ RUN wget https://get.docker.com -q -O /tmp/getdocker && \
     chmod +x /tmp/getdocker && \
     sh /tmp/getdocker && \
     rm /tmp/getdocker && \
-    apt-get -y clean && apt-get -y autoremove
+    apt-get -y clean && apt-get -y autoremove && \
+    apt-get install iputils-ping
 
 # Install the Docker Swarm spawner
 RUN git clone https://github.com/isuftin/SwarmSpawner /tmp/SwarmSpawner && \
